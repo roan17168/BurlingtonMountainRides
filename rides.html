@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UVMRides – Driver Calendar</title>
+  <style>
+    :root {
+      --bg: #0f172a;        /* slate-900 */
+      --panel: #111827;     /* gray-900 */
+      --panel-2: #1f2937;   /* gray-800 */
+      --text: #e5e7eb;      /* gray-200 */
+      --muted: #9ca3af;     /* gray-400 */
+      --brand: #22d3ee;     /* cyan-400 */
+      --brand-2: #06b6d4;   /* cyan-500 */
+      --ok: #22c55e;        /* green-500 */
+      --warn: #f59e0b;      /* amber-500 */
+      --danger: #ef4444;    /* red-500 */
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: linear-gradient(180deg, #0b1220, #0f172a); color: var(--text);
+    }
+    header {
+      position: sticky; top: 0; z-index: 10; backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, .7); border-bottom: 1px solid #1f2937;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; padding: 16px 20px; }
+    .title { display:flex; align-items:center; gap:12px; }
+    .title h1 { margin: 0; font-size: 22px; letter-spacing: .3px; }
+    .btn {
+      background: var(--brand-2); color: #001018; border: none; border-radius: 10px;
+      padding: 10px 14px; font-weight: 700; cursor: pointer; transition: .2s transform, .2s opacity;
+    }
+    .btn:hover { transform: translateY(-1px); opacity: .95; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .toolbar { display:flex; gap: 10px; align-items:center; justify-content: space-between; }
+    .toolbar-right { display:flex; gap: 10px; align-items:center; }
+
+    /* Calendar list */
+    .calendar {
+      max-width: 1000px; margin: 16px auto; padding: 0 20px 40px; height: calc(100vh - 82px);
+      overflow-y: auto; scroll-behavior: smooth;
+    }
+    .day { background: var(--panel); border: 1px solid #1f2937; border-radius: 18px; padding: 18px; margin: 12px 0; }
+    .day h2 { margin: 0 0 12px; font-size: 18px; font-weight: 800; letter-spacing: .2px; color: #cbd5e1; }
+
+    .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+    .slot { background: var(--panel-2); border: 1px solid #293548; border-radius: 14px; padding: 12px; position: relative; cursor: pointer; transition: .2s transform, .2s box-shadow, .2s opacity; }
+    .slot:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0,0,0,.25); }
+    .slot.gray { filter: grayscale(1); opacity: .65; cursor: not-allowed; }
+    .slot .hdr { display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px; }
+    .slot .mountain { font-weight: 800; font-size: 16px; }
+    .slot .price { font-weight: 800; }
+    .slot .meta { font-size: 12px; color: var(--muted); display:flex; gap: 8px; align-items:center; }
+    .chip { background:#0b2530; color:#7dd3fc; padding: 2px 8px; border-radius: 999px; border:1px solid #113444; font-size: 11px; font-weight:700; }
+
+    .empty { color: var(--muted); font-style: italic; }
+
+    /* Modal */
+    dialog { border: none; width: min(820px, 92vw); border-radius: 18px; padding: 0; background: #0b1220; color: var(--text); box-shadow: 0 30px 60px rgba(0,0,0,.5); }
+    .modal-hdr { display:flex; justify-content: space-between; align-items:center; padding: 16px 18px; border-bottom: 1px solid #1f2937; }
+    .modal-body { padding: 18px; max-height: 70vh; overflow: auto; }
+    .x { background: transparent; border: none; color: var(--text); font-size: 22px; cursor:pointer; }
+
+    /* Tabs */
+    .tabs { display:flex; gap:6px; margin-bottom: 10px; }
+    .tab { background:#0b2530; border:1px solid #113444; color:#93c5fd; padding:8px 10px; border-radius: 10px; cursor:pointer; font-weight:700; }
+    .tab[aria-selected="true"] { background:#12253b; color:#c3e3ff; outline:2px solid #1e40af; }
+
+    /* Form */
+    form { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .full { grid-column: 1/-1; }
+    label { display:block; font-size: 12px; color:#9ca3af; margin-bottom: 6px; }
+    input[type="text"], input[type="date"], input[type="time"], input[type="tel"], input[type="number"], select, textarea {
+      width: 100%; padding: 10px 12px; background: #0b1a27; color: var(--text); border:1px solid #113444; border-radius:10px; outline: none;
+    }
+    textarea { min-height: 90px; resize: vertical; }
+    .range-wrap { display:flex; gap:10px; align-items:center; }
+    input[type="range"] { width:100%; }
+    .pill { background:#092030; color:#67e8f9; border:1px solid #0e3a4a; padding: 6px 10px; border-radius: 999px; font-weight: 800; font-size: 12px; }
+
+    .footer { display:flex; justify-content:flex-end; gap: 8px; padding: 12px 18px 18px; }
+
+    .detail { display:grid; gap: 10px; }
+    .detail-row { display:flex; gap: 10px; align-items:center; }
+    .detail .kv { background:#0b1a27; border:1px solid #113444; border-radius: 10px; padding: 10px 12px; display:flex; justify-content:space-between; align-items:center; }
+    .detail .kv strong { color:#93c5fd; }
+
+    .toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background:#05222d; color:#e5faff; padding: 10px 14px; border-radius: 10px; border:1px solid #0d3a48; box-shadow: 0 10px 30px rgba(0,0,0,.4); font-weight:700; display:none; }
+    .sr-only { position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap toolbar">
+      <div class="title">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 13h4l3 7 4-14 3 7h4" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h1>UVMRides – Driver Calendar</h1>
+      </div>
+      <div class="toolbar-right">
+        <button id="addBtn" class="btn" type="button">+ Add event</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="calendar" id="calendar" aria-live="polite"></main>
+
+  <!-- Add / Import Modal -->
+  <dialog id="addModal" aria-modal="true">
+    <div class="modal-hdr">
+      <strong>Create a ride</strong>
+      <button class="x" onclick="closeAddModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs" role="tablist">
+        <button class="tab" id="tabBuild" role="tab" aria-selected="true" onclick="switchTab('build')">Build JSON</button>
+        <button class="tab" id="tabPaste" role="tab" aria-selected="false" onclick="switchTab('paste')">Paste JSON</button>
+      </div>
+
+      <section id="paneBuild" role="tabpanel" aria-labelledby="tabBuild">
+        <form id="rideForm">
+          <div>
+            <label for="date">Date of trip</label>
+            <input id="date" name="date" type="date" required />
+          </div>
+          <div>
+            <label for="arrival">Arrival time</label>
+            <input id="arrival" name="arrival" type="time" required />
+          </div>
+          <div>
+            <label for="depart">Departure time</label>
+            <input id="depart" name="depart" type="time" required />
+          </div>
+          <div>
+            <label for="mountain">Mountain destination</label>
+            <input id="mountain" name="mountain" type="text" placeholder="e.g., Stowe Mountain Resort" required />
+          </div>
+          <div class="full">
+            <label>Payment (amount)</label>
+            <div class="range-wrap">
+              <input id="amount" name="amount" type="range" min="1" max="30" step="0.5" value="10" oninput="amtOut.textContent='$'+Number(this.value).toFixed(2)" />
+              <span class="pill" id="amtOut">$10.00</span>
+            </div>
+          </div>
+          <div>
+            <label for="method">Payment method</label>
+            <select id="method" name="method">
+              <option>Cash</option>
+              <option>Venmo</option>
+              <option>PayPal</option>
+              <option>Credit Card</option>
+            </select>
+          </div>
+          <div>
+            <label for="seats">Number of seats</label>
+            <input id="seats" name="seats" type="number" min="1" max="8" value="3" required />
+          </div>
+          <div class="full">
+            <label for="notes">Payment notes (optional)</label>
+            <textarea id="notes" name="notes" placeholder="Includes tolls / parking, etc."></textarea>
+          </div>
+          <div class="full">
+            <label for="phone">Phone number</label>
+            <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="000-000-0000" required />
+          </div>
+        </form>
+      </section>
+
+      <section id="panePaste" role="tabpanel" aria-labelledby="tabPaste" hidden>
+        <label for="jsonIn" class="sr-only">Paste Driver Application JSON</label>
+        <textarea id="jsonIn" class="full" style="width:100%; min-height:220px" placeholder='Paste a JSON string like:\n{ "title":"Driver Application Form", "trips":[{ "date_of_trip":"2025-01-12", "arrival_time":"08:30", "departure_time":"16:45", "mountain_destination":"Stowe Mountain Resort", "payment": { "amount": 20.00, "method":"Cash", "notes":"Includes tolls" }, "number_of_seats": 2, "phone_number":"000-000-0000" }] }'></textarea>
+        <p style="color:#9ca3af; font-size:12px">Only the fields shown above are read. Extra fields will be ignored.</p>
+      </section>
+    </div>
+    <div class="footer">
+      <button class="btn" onclick="handleSaveRide()">Save ride</button>
+    </div>
+  </dialog>
+
+  <!-- Detail / Join Modal -->
+  <dialog id="detailModal" aria-modal="true">
+    <div class="modal-hdr">
+      <strong id="detailTitle">Ride details</strong>
+      <button class="x" onclick="closeDetail()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail" id="detailBody"></div>
+    </div>
+    <div class="footer" id="detailFooter"></div>
+  </dialog>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /*************************
+     * Utilities & State
+     *************************/
+    const $$ = (sel, root=document) => root.querySelector(sel);
+    const $$$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    /** Persisted rides structure
+     * [
+     *  { id, date:"YYYY-MM-DD", arrival:"HH:mm", departure:"HH:mm", mountain, amount, method, notes, seats, seatsLeft, phone }
+     * ]
+     */
+    const STORAGE_KEY = 'uvmrides.trips.v1';
+
+    function loadTrips() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch { return []; }
+    }
+    function saveTrips(trips) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
+    }
+
+    let trips = loadTrips();
+
+    function toast(msg, ms=1800) {
+      const t = $$('#toast');
+      t.textContent = msg; t.style.display = 'block';
+      setTimeout(()=> t.style.display = 'none', ms);
+    }
+
+    function fmtMoney(n){ return '$' + Number(n).toFixed(2); }
+
+    function todayISO(){
+      const d = new Date();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      return `${d.getFullYear()}-${mm}-${dd}`;
+    }
+
+    /*************************
+     * Calendar generation
+     *************************/
+    const CAL_DAYS = 60; // render 60 days forward
+
+    function renderCalendar(){
+      const cal = $$('#calendar');
+      cal.innerHTML = '';
+
+      const start = new Date();
+      start.setHours(0,0,0,0);
+
+      for(let i=0;i<CAL_DAYS;i++){
+        const d = new Date(start); d.setDate(d.getDate()+i);
+        const ds = d.toLocaleDateString(undefined,{ weekday:'long', month:'long', day:'numeric', year:'numeric'});
+        const iso = d.toISOString().slice(0,10);
+
+        const day = document.createElement('section'); day.className='day'; day.dataset.date = iso;
+        day.innerHTML = `<h2>${ds}</h2><div class="slots" role="list"></div>`;
+        const list = $$('.slots', day);
+
+        // rides for this day
+        const dayTrips = trips.filter(t=>t.date===iso).sort((a,b)=>a.arrival.localeCompare(b.arrival));
+        if(dayTrips.length===0){
+          const p = document.createElement('p'); p.className='empty'; p.textContent='No rides yet. Be the first to add one!'; list.appendChild(p);
+        } else {
+          dayTrips.forEach(t=> list.appendChild(renderSlot(t)) );
+        }
+        cal.appendChild(day);
+      }
+    }
+
+    function renderSlot(t){
+      const slot = document.createElement('article');
+      slot.className = 'slot' + (t.seatsLeft<=0 ? ' gray': '');
+      slot.setAttribute('role','listitem');
+      slot.innerHTML = `
+        <div class="hdr">
+          <div class="mountain">${escapeHtml(t.mountain)}</div>
+          <div class="price">${fmtMoney(t.amount)}</div>
+        </div>
+        <div class="meta">
+          <span class="chip">Arr ${t.arrival}</span>
+          <span class="chip">Dep ${t.departure}</span>
+          <span class="chip" aria-label="Seats left">Seats: ${t.seatsLeft}</span>
+        </div>`;
+
+      if(t.seatsLeft>0){ slot.addEventListener('click', ()=> openDetail(t.id)); }
+      return slot;
+    }
+
+    /*************************
+     * Add Ride (build or paste JSON)
+     *************************/
+    $$('#addBtn').addEventListener('click', ()=> openAddModal());
+
+    function openAddModal(){
+      // default tab
+      switchTab('build');
+      // Default date to today
+      $$('#date').value = todayISO();
+      $$('#amtOut').textContent = fmtMoney($$('#amount').value);
+      $$('#addModal').showModal();
+    }
+    function closeAddModal(){ $$('#addModal').close(); }
+
+    function switchTab(which){
+      const isBuild = which==='build';
+      $$('#tabBuild').setAttribute('aria-selected', isBuild);
+      $$('#tabPaste').setAttribute('aria-selected', !isBuild);
+      $$('#paneBuild').hidden = !isBuild;
+      $$('#panePaste').hidden = isBuild;
+    }
+
+    function handleSaveRide(){
+      // Build from form OR parse from JSON
+      let items = [];
+      const buildActive = $$('#paneBuild').hidden === false;
+
+      if(buildActive){
+        const fd = new FormData($$('#rideForm'));
+        const date = fd.get('date');
+        const arrival = fd.get('arrival');
+        const depart = fd.get('depart');
+        const mountain = (fd.get('mountain')||'').trim();
+        const amount = Number(fd.get('amount'));
+        const method = fd.get('method');
+        const notes = (fd.get('notes')||'').trim();
+        const seats = Math.max(0, Number(fd.get('seats'))|0);
+        const phone = (fd.get('phone')||'').trim();
+
+        if(!date||!arrival||!depart||!mountain||!seats||!phone){ toast('Please complete all required fields.'); return; }
+
+        const obj = {
+          title: 'Driver Application Form',
+          trips: [ {
+            date_of_trip: date,
+            arrival_time: arrival,
+            departure_time: depart,
+            mountain_destination: mountain,
+            payment: { amount: Number(amount), method, notes },
+            number_of_seats: seats,
+            phone_number: phone
+          } ]
+        };
+        items = obj.trips;
+      } else {
+        // paste mode
+        let raw = $$('#jsonIn').value.trim();
+        if(!raw){ toast('Paste a JSON string first.'); return; }
+        try {
+          const parsed = JSON.parse(raw);
+          if(!parsed || !Array.isArray(parsed.trips)) throw new Error('Invalid shape');
+          items = parsed.trips;
+        } catch(err){ toast('Invalid JSON: '+ err.message); return; }
+      }
+
+      // Normalize and append each trip
+      const newOnes = items.map(x=> normalizeTrip(x)).filter(Boolean);
+      if(newOnes.length===0){ toast('No valid trips found.'); return; }
+
+      trips = [...trips, ...newOnes];
+      saveTrips(trips);
+      closeAddModal();
+      renderCalendar();
+      toast('Ride saved!');
+    }
+
+    function normalizeTrip(x){
+      // Accept either 12-hour or 24-hour inputs – display as HH:mm (24h) for consistency
+      function normTime(v){
+        if(!v) return '';
+        // If already HH:mm
+        if(/^\d{2}:\d{2}$/.test(v)) return v;
+        // If HH:MM AM/PM
+        const m = v.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);
+        if(m){
+          let h = Number(m[1]) % 12; if(/[pP]M/.test(m[3])) h += 12; return String(h).padStart(2,'0')+':'+m[2];
+        }
+        return v; // best effort
+      }
+
+      const date = x.date_of_trip || x.date || x.when || '';
+      const arrival = normTime(x.arrival_time || x.arrival || '');
+      const departure = normTime(x.departure_time || x.departure || '');
+      const mountain = x.mountain_destination || x.mountain || '';
+      const pay = x.payment || {};
+      const amount = Number(pay.amount ?? 0);
+      const method = String(pay.method ?? 'Cash');
+      const notes = String(pay.notes ?? '');
+      const seats = Number(x.number_of_seats ?? x.seats ?? 0);
+      const phone = String(x.phone_number ?? x.phone ?? '');
+
+      if(!date || !arrival || !departure || !mountain || !seats || !phone) return null;
+      return {
+        id: 't_'+Math.random().toString(36).slice(2,10),
+        date, arrival, departure, mountain,
+        amount, method, notes,
+        seats, seatsLeft: seats, phone
+      };
+    }
+
+    /*************************
+     * Details / Join flow
+     *************************/
+    function openDetail(id){
+      const t = trips.find(r=>r.id===id); if(!t) return;
+      $$('#detailTitle').textContent = t.mountain + ' – ' + t.date;
+
+      const body = $$('#detailBody');
+      body.innerHTML = '';
+      body.appendChild(kv('Arrival', t.arrival));
+      body.appendChild(kv('Departure', t.departure));
+      body.appendChild(kv('Price', fmtMoney(t.amount)));
+      body.appendChild(kv('Payment method', t.method));
+      if(t.notes) body.appendChild(kv('Notes', t.notes));
+      body.appendChild(kv('Seats left', t.seatsLeft + ' / ' + t.seats));
+
+      const ft = $$('#detailFooter');
+      ft.innerHTML = '';
+      const joinBtn = document.createElement('button'); joinBtn.className='btn'; joinBtn.textContent='Join ride';
+      joinBtn.disabled = t.seatsLeft<=0;
+      joinBtn.addEventListener('click', ()=> joinRide(t.id));
+      ft.appendChild(joinBtn);
+
+      $$('#detailModal').showModal();
+    }
+    function closeDetail(){ $$('#detailModal').close(); }
+
+    function kv(label, val){
+      const el = document.createElement('div'); el.className='kv';
+      el.innerHTML = `<strong>${escapeHtml(label)}</strong><span>${escapeHtml(String(val))}</span>`;
+      return el;
+    }
+
+    function joinRide(id){
+      const idx = trips.findIndex(r=>r.id===id); if(idx<0) return;
+      const t = trips[idx];
+      if(t.seatsLeft<=0){ toast('No seats left.'); return; }
+      t.seatsLeft -= 1;
+      saveTrips(trips);
+      renderCalendar();
+
+      const body = $$('#detailBody');
+      body.appendChild(kv('Driver phone', t.phone));
+      const ft = $$('#detailFooter');
+      ft.innerHTML = '';
+      const close = document.createElement('button'); close.className='btn'; close.textContent='Close'; close.addEventListener('click', closeDetail); ft.appendChild(close);
+      toast('You joined this ride!');
+    }
+
+    /*************************
+     * Helpers
+     *************************/
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+
+    // Initial render
+    renderCalendar();
+  </script>
+</body>
+</html>
