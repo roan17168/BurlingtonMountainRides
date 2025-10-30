@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>UVMRides – Driver Calendar</title>
+  <title>BurrlingtonSkiRides – Driver Calendar</title>
   <style>
     :root {
       --bg: #0f172a;        /* slate-900 */
@@ -56,21 +56,16 @@
     .slot .hdr { display:flex; align-items:center; justify-content: space-between; margin-bottom: 8px; }
     .slot .mountain { font-weight: 800; font-size: 16px; }
     .slot .price { font-weight: 800; }
-    .slot .meta { font-size: 12px; color: var(--muted); display:flex; gap: 8px; align-items:center; }
+    .slot .meta { font-size: 12px; color: var(--muted); display:flex; gap: 8px; align-items:center; flex-wrap: wrap; }
     .chip { background:#0b2530; color:#7dd3fc; padding: 2px 8px; border-radius: 999px; border:1px solid #113444; font-size: 11px; font-weight:700; }
 
     .empty { color: var(--muted); font-style: italic; }
 
-    /* Modal */
+    /* Modals */
     dialog { border: none; width: min(820px, 92vw); border-radius: 18px; padding: 0; background: #0b1220; color: var(--text); box-shadow: 0 30px 60px rgba(0,0,0,.5); }
     .modal-hdr { display:flex; justify-content: space-between; align-items:center; padding: 16px 18px; border-bottom: 1px solid #1f2937; }
     .modal-body { padding: 18px; max-height: 70vh; overflow: auto; }
     .x { background: transparent; border: none; color: var(--text); font-size: 22px; cursor:pointer; }
-
-    /* Tabs */
-    .tabs { display:flex; gap:6px; margin-bottom: 10px; }
-    .tab { background:#0b2530; border:1px solid #113444; color:#93c5fd; padding:8px 10px; border-radius: 10px; cursor:pointer; font-weight:700; }
-    .tab[aria-selected="true"] { background:#12253b; color:#c3e3ff; outline:2px solid #1e40af; }
 
     /* Form */
     form { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -87,7 +82,6 @@
     .footer { display:flex; justify-content:flex-end; gap: 8px; padding: 12px 18px 18px; }
 
     .detail { display:grid; gap: 10px; }
-    .detail-row { display:flex; gap: 10px; align-items:center; }
     .detail .kv { background:#0b1a27; border:1px solid #113444; border-radius: 10px; padding: 10px 12px; display:flex; justify-content:space-between; align-items:center; }
     .detail .kv strong { color:#93c5fd; }
 
@@ -99,8 +93,11 @@
   <header>
     <div class="wrap toolbar">
       <div class="title">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 13h4l3 7 4-14 3 7h4" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <h1>UVMRides – Driver Calendar</h1>
+        <!-- Mountain icon in the corner -->
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M3 19l6-10 4 7 2-3 6 6H3z" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>BurrlingtonSkiRides</h1>
       </div>
       <div class="toolbar-right">
         <button id="addBtn" class="btn" type="button">+ Add event</button>
@@ -110,79 +107,62 @@
 
   <main class="calendar" id="calendar" aria-live="polite"></main>
 
-  <!-- Add / Import Modal -->
+  <!-- Add Ride Modal (form-only) -->
   <dialog id="addModal" aria-modal="true">
     <div class="modal-hdr">
       <strong>Create a ride</strong>
       <button class="x" onclick="closeAddModal()" aria-label="Close">✕</button>
     </div>
     <div class="modal-body">
-      <div class="tabs" role="tablist">
-        <button class="tab" id="tabBuild" role="tab" aria-selected="true" onclick="switchTab('build')">Build JSON</button>
-        <button class="tab" id="tabPaste" role="tab" aria-selected="false" onclick="switchTab('paste')">Paste JSON</button>
-      </div>
-
-      <section id="paneBuild" role="tabpanel" aria-labelledby="tabBuild">
-        <form id="rideForm">
-          <div>
-            <label for="date">Date of trip</label>
-            <input id="date" name="date" type="date" required />
+      <form id="rideForm">
+        <div>
+          <label for="date">Date of trip</label>
+          <input id="date" name="date" type="date" required />
+        </div>
+        <div>
+          <label for="depart">Approximate Departure</label>
+          <input id="depart" name="depart" type="time" required />
+        </div>
+        <div class="full">
+          <label for="mountain">Mountain destination</label>
+          <input id="mountain" name="mountain" type="text" placeholder="e.g., Stowe Mountain Resort" required />
+        </div>
+        <div class="full">
+          <label>Payment (amount)</label>
+          <div class="range-wrap">
+            <input id="amount" name="amount" type="range" min="1" max="30" step="0.5" value="10" oninput="amtOut.textContent='$'+Number(this.value).toFixed(2)" />
+            <span class="pill" id="amtOut">$10.00</span>
           </div>
-          <div>
-            <label for="arrival">Arrival time</label>
-            <input id="arrival" name="arrival" type="time" required />
-          </div>
-          <div>
-            <label for="depart">Departure time</label>
-            <input id="depart" name="depart" type="time" required />
-          </div>
-          <div>
-            <label for="mountain">Mountain destination</label>
-            <input id="mountain" name="mountain" type="text" placeholder="e.g., Stowe Mountain Resort" required />
-          </div>
-          <div class="full">
-            <label>Payment (amount)</label>
-            <div class="range-wrap">
-              <input id="amount" name="amount" type="range" min="1" max="30" step="0.5" value="10" oninput="amtOut.textContent='$'+Number(this.value).toFixed(2)" />
-              <span class="pill" id="amtOut">$10.00</span>
-            </div>
-          </div>
-          <div>
-            <label for="method">Payment method</label>
-            <select id="method" name="method">
-              <option>Cash</option>
-              <option>Venmo</option>
-              <option>PayPal</option>
-              <option>Credit Card</option>
-            </select>
-          </div>
-          <div>
-            <label for="seats">Number of seats</label>
-            <input id="seats" name="seats" type="number" min="1" max="8" value="3" required />
-          </div>
-          <div class="full">
-            <label for="notes">Payment notes (optional)</label>
-            <textarea id="notes" name="notes" placeholder="Includes tolls / parking, etc."></textarea>
-          </div>
-          <div class="full">
-            <label for="phone">Phone number</label>
-            <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="000-000-0000" required />
-          </div>
-        </form>
-      </section>
-
-      <section id="panePaste" role="tabpanel" aria-labelledby="tabPaste" hidden>
-        <label for="jsonIn" class="sr-only">Paste Driver Application JSON</label>
-        <textarea id="jsonIn" class="full" style="width:100%; min-height:220px" placeholder='Paste a JSON string like:\n{ "title":"Driver Application Form", "trips":[{ "date_of_trip":"2025-01-12", "arrival_time":"08:30", "departure_time":"16:45", "mountain_destination":"Stowe Mountain Resort", "payment": { "amount": 20.00, "method":"Cash", "notes":"Includes tolls" }, "number_of_seats": 2, "phone_number":"000-000-0000" }] }'></textarea>
-        <p style="color:#9ca3af; font-size:12px">Only the fields shown above are read. Extra fields will be ignored.</p>
-      </section>
+        </div>
+        <div>
+          <label for="method">Payment method</label>
+          <select id="method" name="method">
+            <option>Cash</option>
+            <option>Venmo</option>
+            <option>PayPal</option>
+            <option>Credit Card</option>
+          </select>
+        </div>
+        <div>
+          <label for="seats">Number of seats</label>
+          <input id="seats" name="seats" type="number" min="1" max="8" value="3" required />
+        </div>
+        <div class="full">
+          <label for="notes">Payment notes (optional)</label>
+          <textarea id="notes" name="notes" placeholder="Includes tolls / parking, etc."></textarea>
+        </div>
+        <div class="full">
+          <label for="phone">Phone number</label>
+          <input id="phone" name="phone" type="tel" inputmode="tel" placeholder="000-000-0000" required />
+        </div>
+      </form>
     </div>
     <div class="footer">
       <button class="btn" onclick="handleSaveRide()">Save ride</button>
     </div>
   </dialog>
 
-  <!-- Detail / Join Modal -->
+  <!-- Detail / Join / Remove Modal -->
   <dialog id="detailModal" aria-modal="true">
     <div class="modal-hdr">
       <strong id="detailTitle">Ride details</strong>
@@ -192,6 +172,25 @@
       <div class="detail" id="detailBody"></div>
     </div>
     <div class="footer" id="detailFooter"></div>
+  </dialog>
+
+  <!-- Remove Ride confirmation (phone match) -->
+  <dialog id="removeModal" aria-modal="true">
+    <div class="modal-hdr">
+      <strong>Remove this ride</strong>
+      <button class="x" onclick="closeRemove()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="removeForm">
+        <div class="full">
+          <label for="rmPhone">Creator's Phone Number</label>
+          <input id="rmPhone" name="rmPhone" type="tel" inputmode="tel" placeholder="000-000-0000" required />
+        </div>
+      </form>
+    </div>
+    <div class="footer">
+      <button class="btn" onclick="confirmRemove()">Confirm remove</button>
+    </div>
   </dialog>
 
   <div class="toast" id="toast"></div>
@@ -205,10 +204,10 @@
 
     /** Persisted rides structure
      * [
-     *  { id, date:"YYYY-MM-DD", arrival:"HH:mm", departure:"HH:mm", mountain, amount, method, notes, seats, seatsLeft, phone }
+     *  { id, date:"YYYY-MM-DD", depart:"HH:mm", mountain, amount, method, notes, seats, seatsLeft, phone }
      * ]
      */
-    const STORAGE_KEY = 'uvmrides.trips.v1';
+    const STORAGE_KEY = 'burrlington.rides.v1';
 
     function loadTrips() {
       try {
@@ -218,9 +217,7 @@
         return Array.isArray(arr) ? arr : [];
       } catch { return []; }
     }
-    function saveTrips(trips) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
-    }
+    function saveTrips(trips) { localStorage.setItem(STORAGE_KEY, JSON.stringify(trips)); }
 
     let trips = loadTrips();
 
@@ -261,7 +258,7 @@
         const list = $$('.slots', day);
 
         // rides for this day
-        const dayTrips = trips.filter(t=>t.date===iso).sort((a,b)=>a.arrival.localeCompare(b.arrival));
+        const dayTrips = trips.filter(t=>t.date===iso).sort((a,b)=>a.depart.localeCompare(b.depart));
         if(dayTrips.length===0){
           const p = document.createElement('p'); p.className='empty'; p.textContent='No rides yet. Be the first to add one!'; list.appendChild(p);
         } else {
@@ -281,8 +278,7 @@
           <div class="price">${fmtMoney(t.amount)}</div>
         </div>
         <div class="meta">
-          <span class="chip">Arr ${t.arrival}</span>
-          <span class="chip">Dep ${t.departure}</span>
+          <span class="chip">Dep ${t.depart}</span>
           <span class="chip" aria-label="Seats left">Seats: ${t.seatsLeft}</span>
         </div>`;
 
@@ -291,76 +287,47 @@
     }
 
     /*************************
-     * Add Ride (build or paste JSON)
+     * Add Ride (form only)
      *************************/
     $$('#addBtn').addEventListener('click', ()=> openAddModal());
 
     function openAddModal(){
-      // default tab
-      switchTab('build');
-      // Default date to today
       $$('#date').value = todayISO();
       $$('#amtOut').textContent = fmtMoney($$('#amount').value);
       $$('#addModal').showModal();
     }
     function closeAddModal(){ $$('#addModal').close(); }
 
-    function switchTab(which){
-      const isBuild = which==='build';
-      $$('#tabBuild').setAttribute('aria-selected', isBuild);
-      $$('#tabPaste').setAttribute('aria-selected', !isBuild);
-      $$('#paneBuild').hidden = !isBuild;
-      $$('#panePaste').hidden = isBuild;
-    }
-
     function handleSaveRide(){
-      // Build from form OR parse from JSON
-      let items = [];
-      const buildActive = $$('#paneBuild').hidden === false;
+      const fd = new FormData($$('#rideForm'));
+      const date = fd.get('date');
+      const depart = fd.get('depart');
+      const mountain = (fd.get('mountain')||'').trim();
+      const amount = Number(fd.get('amount'));
+      const method = fd.get('method');
+      const notes = (fd.get('notes')||'').trim();
+      const seats = Math.max(0, Number(fd.get('seats'))|0);
+      const phone = (fd.get('phone')||'').trim();
 
-      if(buildActive){
-        const fd = new FormData($$('#rideForm'));
-        const date = fd.get('date');
-        const arrival = fd.get('arrival');
-        const depart = fd.get('depart');
-        const mountain = (fd.get('mountain')||'').trim();
-        const amount = Number(fd.get('amount'));
-        const method = fd.get('method');
-        const notes = (fd.get('notes')||'').trim();
-        const seats = Math.max(0, Number(fd.get('seats'))|0);
-        const phone = (fd.get('phone')||'').trim();
+      if(!date||!depart||!mountain||!seats||!phone){ toast('Please complete all required fields.'); return; }
 
-        if(!date||!arrival||!depart||!mountain||!seats||!phone){ toast('Please complete all required fields.'); return; }
+      // Build the JSON object per spec (form-only, no manual JSON paste)
+      const payload = {
+        title: 'Driver Application Form',
+        trips: [ {
+          date_of_trip: date,
+          aprox_dep: depart,
+          mountain_destination: mountain,
+          payment: { amount: Number(amount), method, notes },
+          number_of_seats: seats,
+          phone_number: phone
+        } ]
+      };
 
-        const obj = {
-          title: 'Driver Application Form',
-          trips: [ {
-            date_of_trip: date,
-            arrival_time: arrival,
-            departure_time: depart,
-            mountain_destination: mountain,
-            payment: { amount: Number(amount), method, notes },
-            number_of_seats: seats,
-            phone_number: phone
-          } ]
-        };
-        items = obj.trips;
-      } else {
-        // paste mode
-        let raw = $$('#jsonIn').value.trim();
-        if(!raw){ toast('Paste a JSON string first.'); return; }
-        try {
-          const parsed = JSON.parse(raw);
-          if(!parsed || !Array.isArray(parsed.trips)) throw new Error('Invalid shape');
-          items = parsed.trips;
-        } catch(err){ toast('Invalid JSON: '+ err.message); return; }
-      }
+      const normalized = normalizeTrip(payload.trips[0]);
+      if(!normalized){ toast('Trip data invalid.'); return; }
 
-      // Normalize and append each trip
-      const newOnes = items.map(x=> normalizeTrip(x)).filter(Boolean);
-      if(newOnes.length===0){ toast('No valid trips found.'); return; }
-
-      trips = [...trips, ...newOnes];
+      trips = [...trips, normalized];
       saveTrips(trips);
       closeAddModal();
       renderCalendar();
@@ -368,22 +335,16 @@
     }
 
     function normalizeTrip(x){
-      // Accept either 12-hour or 24-hour inputs – display as HH:mm (24h) for consistency
       function normTime(v){
         if(!v) return '';
-        // If already HH:mm
-        if(/^\d{2}:\d{2}$/.test(v)) return v;
-        // If HH:MM AM/PM
+        if(/^\d{2}:\d{2}$/.test(v)) return v; // already 24h HH:mm
         const m = v.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i);
-        if(m){
-          let h = Number(m[1]) % 12; if(/[pP]M/.test(m[3])) h += 12; return String(h).padStart(2,'0')+':'+m[2];
-        }
-        return v; // best effort
+        if(m){ let h = Number(m[1]) % 12; if(/[pP]M/.test(m[3])) h += 12; return String(h).padStart(2,'0')+':'+m[2]; }
+        return v;
       }
 
-      const date = x.date_of_trip || x.date || x.when || '';
-      const arrival = normTime(x.arrival_time || x.arrival || '');
-      const departure = normTime(x.departure_time || x.departure || '');
+      const date = x.date_of_trip || x.date || '';
+      const depart = normTime(x.aprox_dep || x.departure_time || x.depart || '');
       const mountain = x.mountain_destination || x.mountain || '';
       const pay = x.payment || {};
       const amount = Number(pay.amount ?? 0);
@@ -392,26 +353,27 @@
       const seats = Number(x.number_of_seats ?? x.seats ?? 0);
       const phone = String(x.phone_number ?? x.phone ?? '');
 
-      if(!date || !arrival || !departure || !mountain || !seats || !phone) return null;
+      if(!date || !depart || !mountain || !seats || !phone) return null;
       return {
         id: 't_'+Math.random().toString(36).slice(2,10),
-        date, arrival, departure, mountain,
+        date, depart, mountain,
         amount, method, notes,
         seats, seatsLeft: seats, phone
       };
     }
 
     /*************************
-     * Details / Join flow
+     * Details / Join / Remove flow
      *************************/
+    let pendingRemoveId = null;
+
     function openDetail(id){
       const t = trips.find(r=>r.id===id); if(!t) return;
       $$('#detailTitle').textContent = t.mountain + ' – ' + t.date;
 
       const body = $$('#detailBody');
       body.innerHTML = '';
-      body.appendChild(kv('Arrival', t.arrival));
-      body.appendChild(kv('Departure', t.departure));
+      body.appendChild(kv('Departure', t.depart));
       body.appendChild(kv('Price', fmtMoney(t.amount)));
       body.appendChild(kv('Payment method', t.method));
       if(t.notes) body.appendChild(kv('Notes', t.notes));
@@ -419,14 +381,23 @@
 
       const ft = $$('#detailFooter');
       ft.innerHTML = '';
+
       const joinBtn = document.createElement('button'); joinBtn.className='btn'; joinBtn.textContent='Join ride';
       joinBtn.disabled = t.seatsLeft<=0;
       joinBtn.addEventListener('click', ()=> joinRide(t.id));
+
+      const removeBtn = document.createElement('button'); removeBtn.className='btn'; removeBtn.style.background = 'var(--danger)'; removeBtn.textContent='Remove ride';
+      removeBtn.addEventListener('click', ()=> { pendingRemoveId = t.id; openRemove(); });
+
       ft.appendChild(joinBtn);
+      ft.appendChild(removeBtn);
 
       $$('#detailModal').showModal();
     }
     function closeDetail(){ $$('#detailModal').close(); }
+
+    function openRemove(){ $$('#removeModal').showModal(); }
+    function closeRemove(){ $$('#removeModal').close(); pendingRemoveId = null; $$('#removeForm').reset(); }
 
     function kv(label, val){
       const el = document.createElement('div'); el.className='kv';
@@ -449,6 +420,27 @@
       const close = document.createElement('button'); close.className='btn'; close.textContent='Close'; close.addEventListener('click', closeDetail); ft.appendChild(close);
       toast('You joined this ride!');
     }
+
+    function confirmRemove(){
+      if(!pendingRemoveId) { closeRemove(); return; }
+      const t = trips.find(r=>r.id===pendingRemoveId); if(!t) { closeRemove(); return; }
+      const inputPhone = ($$('#rmPhone').value || '').trim();
+      if(!inputPhone){ toast('Enter your phone number.'); return; }
+
+      if(normalizePhone(inputPhone) !== normalizePhone(t.phone)){
+        toast('Phone number does not match the creator.');
+        return;
+      }
+      // remove ride
+      trips = trips.filter(r=>r.id!==pendingRemoveId);
+      saveTrips(trips);
+      renderCalendar();
+      closeRemove();
+      closeDetail();
+      toast('Ride removed.');
+    }
+
+    function normalizePhone(p){ return p.replace(/\D+/g,''); }
 
     /*************************
      * Helpers
