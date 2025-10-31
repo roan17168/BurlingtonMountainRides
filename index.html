@@ -209,17 +209,39 @@
      */
     const STORAGE_KEY = 'burrlington.rides.v1';
 
-    function loadTrips() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return [];
-        const arr = JSON.parse(raw);
-        return Array.isArray(arr) ? arr : [];
-      } catch { return []; }
-    }
-    function saveTrips(trips) { localStorage.setItem(STORAGE_KEY, JSON.stringify(trips)); }
+    // Replace localStorage logic with server fetch calls
+let trips = [];
 
-    let trips = loadTrips();
+async function loadTrips() {
+  try {
+    const res = await fetch('load.php');
+    if (!res.ok) throw new Error('Failed to load');
+    trips = await res.json();
+  } catch (err) {
+    console.error(err);
+    trips = [];
+  }
+  renderCalendar();
+}
+
+async function saveTrip(newTrip) {
+  try {
+    const res = await fetch('save.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTrip)
+    });
+    const data = await res.json();
+    if (data.success) {
+      trips = data.rides;
+      renderCalendar();
+    } else {
+      console.error('Save error:', data);
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
 
     function toast(msg, ms=1800) {
       const t = $$('#toast');
@@ -327,8 +349,7 @@
       const normalized = normalizeTrip(payload.trips[0]);
       if(!normalized){ toast('Trip data invalid.'); return; }
 
-      trips = [...trips, normalized];
-      saveTrips(trips);
+      await saveTrip(normalized);
       closeAddModal();
       renderCalendar();
       toast('Ride saved!');
@@ -455,7 +476,7 @@
     }
 
     // Initial render
-    renderCalendar();
+    loadTrips();
   </script>
 </body>
 </html>
