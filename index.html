@@ -1,17 +1,15 @@
-<!-- ===============================
+<!-- =========================================
 FILE: index.html
-Place this in your public web root (same folder as the PHP files below)
-=============================== -->
+Place this in your public web root along with the PHP files below.
+========================================= -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BurrlingtonSkiRides – Driver Calendar</title>
+  <title>BurlingtonMountainRides – Driver Calendar</title>
   <style>
-    :root {
-      --bg: #0f172a; --panel:#111827; --panel-2:#1f2937; --text:#e5e7eb; --muted:#9ca3af; --brand:#22d3ee; --brand-2:#06b6d4; --danger:#ef4444;
-    }
+    :root { --bg:#0f172a; --panel:#111827; --panel-2:#1f2937; --text:#e5e7eb; --muted:#9ca3af; --brand:#22d3ee; --brand-2:#06b6d4; --danger:#ef4444; --ok:#22c55e; }
     *{box-sizing:border-box} html,body{height:100%}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
     header{position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);background:rgba(15,23,42,.7);border-bottom:1px solid #1f2937}
@@ -22,23 +20,32 @@ Place this in your public web root (same folder as the PHP files below)
     .btn:hover{transform:translateY(-1px);opacity:.95}
     .btn:disabled{opacity:.5;cursor:not-allowed}
     .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between}
+
     .calendar{max-width:1000px;margin:16px auto;padding:0 20px 40px;height:calc(100vh - 82px);overflow-y:auto;scroll-behavior:smooth}
     .day{background:var(--panel);border:1px solid #1f2937;border-radius:18px;padding:18px;margin:12px 0}
     .day h2{margin:0 0 12px;font-size:18px;font-weight:800;letter-spacing:.2px;color:#cbd5e1}
     .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-    .slot{background:var(--panel-2);border:1px solid #293548;border-radius:14px;padding:12px;position:relative;cursor:pointer;transition:.2s transform,.2s box-shadow,.2s opacity}
+
+    .slot{background:var(--panel-2);border:1px solid #293548;border-radius:14px;padding:12px;position:relative;transition:.2s transform,.2s box-shadow,.2s opacity}
     .slot:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.25)}
-    .slot.gray{filter:grayscale(1);opacity:.65;cursor:not-allowed}
+    .slot.gray{filter:grayscale(1);opacity:.65}
     .slot .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
     .slot .mountain{font-weight:800;font-size:16px}
     .slot .price{font-weight:800}
     .slot .meta{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .chip{background:#0b2530;color:#7dd3fc;padding:2px 8px;border-radius:999px;border:1px solid #113444;font-size:11px;font-weight:700}
+
+    /* corner manage "x" */
+    .slot .manage { position:absolute; top:8px; right:8px; width:22px; height:22px; border-radius:6px; border:1px solid #2a3a4c; background:#0b2530; color:#9bd9ff; font-weight:900; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .slot.gray .manage{ opacity:.9 }
+
     .empty{color:var(--muted);font-style:italic}
+
     dialog{border:none;width:min(820px,92vw);border-radius:18px;padding:0;background:#0b1220;color:var(--text);box-shadow:0 30px 60px rgba(0,0,0,.5)}
     .modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #1f2937}
     .modal-body{padding:18px;max-height:70vh;overflow:auto}
     .x{background:transparent;border:none;color:var(--text);font-size:22px;cursor:pointer}
+
     form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .full{grid-column:1/-1}
     label{display:block;font-size:12px;color:#9ca3af;margin-bottom:6px}
@@ -47,9 +54,11 @@ Place this in your public web root (same folder as the PHP files below)
     .range-wrap{display:flex;gap:10px;align-items:center}
     input[type="range"]{width:100%}
     .pill{background:#092030;color:#67e8f9;border:1px solid #0e3a4a;padding:6px 10px;border-radius:999px;font-weight:800;font-size:12px}
+
     .footer{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px 18px}
     .detail .kv{background:#0b1a27;border:1px solid #113444;border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
     .detail .kv strong{color:#93c5fd}
+
     .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#05222d;color:#e5faff;padding:10px 14px;border-radius:10px;border:1px solid #0d3a48;box-shadow:0 10px 30px rgba(0,0,0,.4);font-weight:700;display:none}
   </style>
 </head>
@@ -57,8 +66,9 @@ Place this in your public web root (same folder as the PHP files below)
   <header>
     <div class="wrap toolbar">
       <div class="title">
+        <!-- Mountain icon -->
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 19l6-10 4 7 2-3 6 6H3z" stroke="#67e8f9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <h1>BurrlingtonSkiRides</h1>
+        <h1>BurlingtonMountainRides</h1>
       </div>
       <div class="toolbar-right">
         <button id="addBtn" class="btn" type="button">+ Add event</button>
@@ -86,16 +96,19 @@ Place this in your public web root (same folder as the PHP files below)
           <input id="mountain" name="mountain" type="text" placeholder="e.g., Stowe Mountain Resort" required />
         </div>
         <div class="full">
-          <label>Payment (amount)</label>
+          <label>Pitch In For Gas (amount)</label>
           <div class="range-wrap">
-            <input id="amount" name="amount" type="range" min="1" max="30" step="0.5" value="10" oninput="amtOut.textContent='$'+Number(this.value).toFixed(2)" />
-            <span class="pill" id="amtOut">$10.00</span>
+            <input id="amount" name="amount" type="range" min="0" max="30" step="0.5" value="5" oninput="amtOut.textContent='$'+Number(this.value).toFixed(2)" />
+            <span class="pill" id="amtOut">$5.00</span>
           </div>
         </div>
         <div>
           <label for="method">Payment method</label>
           <select id="method" name="method">
-            <option>Cash</option><option>Venmo</option><option>PayPal</option><option>Credit Card</option>
+            <option>Venmo</option>
+            <option>Cash</option>
+            <option>PayPal</option>
+            <option>Credit Card</option>
           </select>
         </div>
         <div>
@@ -104,7 +117,7 @@ Place this in your public web root (same folder as the PHP files below)
         </div>
         <div class="full">
           <label for="notes">Payment notes (optional)</label>
-          <textarea id="notes" name="notes" placeholder="Includes tolls / parking, etc."></textarea>
+          <textarea id="notes" name="notes" placeholder="Venmo @handle, includes parking, etc."></textarea>
         </div>
         <div class="full">
           <label for="phone">Phone number</label>
@@ -115,22 +128,35 @@ Place this in your public web root (same folder as the PHP files below)
     <div class="footer"><button class="btn" onclick="handleSaveRide()">Save ride</button></div>
   </dialog>
 
-  <!-- Detail / Join / Remove Modals -->
+  <!-- Detail / Join Modal -->
   <dialog id="detailModal" aria-modal="true">
     <div class="modal-hdr"><strong id="detailTitle">Ride details</strong><button class="x" onclick="closeDetail()" aria-label="Close">✕</button></div>
     <div class="modal-body"><div class="detail" id="detailBody"></div></div>
     <div class="footer" id="detailFooter"></div>
   </dialog>
 
-  <dialog id="removeModal" aria-modal="true">
-    <div class="modal-hdr"><strong>Remove this ride</strong><button class="x" onclick="closeRemove()" aria-label="Close">✕</button></div>
+  <!-- Join Confirmation Modal -->
+  <dialog id="joinModal" aria-modal="true">
+    <div class="modal-hdr"><strong>You're in! 🎉</strong><button class="x" onclick="closeJoin()" aria-label="Close">✕</button></div>
+    <div class="modal-body"><div id="joinBody"></div></div>
+    <div class="footer"><button class="btn" onclick="closeJoin()">Close</button></div>
+  </dialog>
+
+  <!-- Manage (delete/update seats) -->
+  <dialog id="manageModal" aria-modal="true">
+    <div class="modal-hdr"><strong>Manage ride</strong><button class="x" onclick="closeManage()" aria-label="Close">✕</button></div>
     <div class="modal-body">
-      <form id="removeForm">
-        <div class="full"><label for="rmPhone">Creator's Phone Number</label>
-        <input id="rmPhone" name="rmPhone" type="tel" inputmode="tel" placeholder="000-000-0000" required /></div>
+      <form id="manageForm">
+        <div class="full"><label for="mPhone">Creator's Phone Number</label>
+          <input id="mPhone" type="tel" inputmode="tel" placeholder="000-000-0000" required></div>
+        <div><label for="mSeatsLeft">New seats left</label>
+          <input id="mSeatsLeft" type="number" min="0" max="99" placeholder="e.g., 2"></div>
       </form>
     </div>
-    <div class="footer"><button class="btn" onclick="confirmRemove()">Confirm remove</button></div>
+    <div class="footer">
+      <button class="btn" id="btnUpdateSeats">Update seats</button>
+      <button class="btn" id="btnDelete" style="background:var(--danger)">Delete ride</button>
+    </div>
   </dialog>
 
   <div class="toast" id="toast"></div>
@@ -138,13 +164,13 @@ Place this in your public web root (same folder as the PHP files below)
   <script>
     // ===== Utilities & State =====
     const $$ = (sel, root=document) => root.querySelector(sel);
-    const $$$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-
-    let trips = []; // will be filled from server
+    let trips = []; // populated from server
+    let manageTargetId = null;
 
     function toast(msg, ms=1800){ const t=$$('#toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none', ms); }
     function fmtMoney(n){ return '$' + Number(n).toFixed(2); }
     function todayISO(){ const d=new Date(); const mm=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${d.getFullYear()}-${mm}-${dd}`; }
+    function escapeHtml(str){ return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 
     // ===== Calendar generation =====
     const CAL_DAYS=60;
@@ -156,7 +182,7 @@ Place this in your public web root (same folder as the PHP files below)
         const ds=d.toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
         const iso=d.toISOString().slice(0,10);
         const day=document.createElement('section'); day.className='day'; day.dataset.date=iso;
-        day.innerHTML=`<h2>${ds}</h2><div class="slots" role="list"></div>`; const list=$$('.slots',day);
+        day.innerHTML=`<h2>${ds}</h2><div class="slots" role="list"></div>`; const list=day.querySelector('.slots');
         const dayTrips=trips.filter(t=>t.date===iso).sort((a,b)=>a.depart.localeCompare(b.depart));
         if(dayTrips.length===0){ const p=document.createElement('p'); p.className='empty'; p.textContent='No rides yet. Be the first to add one!'; list.appendChild(p); }
         else dayTrips.forEach(t=> list.appendChild(renderSlot(t)));
@@ -168,14 +194,25 @@ Place this in your public web root (same folder as the PHP files below)
       const slot=document.createElement('article');
       slot.className='slot'+(t.seatsLeft<=0?' gray':'');
       slot.setAttribute('role','listitem');
-      slot.innerHTML=`<div class="hdr"><div class="mountain">${escapeHtml(t.mountain)}</div><div class="price">${fmtMoney(t.amount)}</div></div>
-        <div class="meta"><span class="chip">Dep ${t.depart}</span><span class="chip" aria-label="Seats left">Seats: ${t.seatsLeft}</span></div>`;
-      if(t.seatsLeft>0){ slot.addEventListener('click',()=>openDetail(t.id)); }
+      slot.innerHTML=`
+        <div class="hdr">
+          <div class="mountain">${escapeHtml(t.mountain)}</div>
+          <div class="price">${fmtMoney(t.amount)}</div>
+        </div>
+        <div class="meta">
+          <span class="chip">Dep ${t.depart}</span>
+          <span class="chip" aria-label="Seats left">Seats: ${t.seatsLeft}</span>
+        </div>
+        <button class="manage" title="Manage">×</button>
+      `;
+      const manageBtn = slot.querySelector('.manage');
+      manageBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openManage(t.id); });
+      if(t.seatsLeft>0){ slot.addEventListener('click', ()=> openDetail(t.id)); }
       return slot;
     }
 
-    // ===== Add Ride (form only) =====
-    $$('#addBtn').addEventListener('click',()=>openAddModal());
+    // ===== Add Ride =====
+    document.addEventListener('DOMContentLoaded', ()=>{ $$('#addBtn').addEventListener('click',()=>openAddModal()); loadTrips(); });
     function openAddModal(){ $$('#date').value=todayISO(); $$('#amtOut').textContent=fmtMoney($$('#amount').value); $$('#addModal').showModal(); }
     function closeAddModal(){ $$('#addModal').close(); }
 
@@ -185,54 +222,65 @@ Place this in your public web root (same folder as the PHP files below)
       const amount=Number(fd.get('amount')); const method=fd.get('method'); const notes=(fd.get('notes')||'').trim();
       const seats=Math.max(0, Number(fd.get('seats'))|0); const phone=(fd.get('phone')||'').trim();
       if(!date||!depart||!mountain||!seats||!phone){ toast('Please complete all required fields.'); return; }
-      const payload = normalizeTrip({ date_of_trip:date, aprox_dep:depart, mountain_destination:mountain, payment:{amount,method,notes}, number_of_seats:seats, phone_number:phone });
-      if(!payload){ toast('Trip data invalid.'); return; }
-      try{ await saveTrip(payload); closeAddModal(); } catch(e){ console.error(e); toast('Unable to save.'); }
+      // Build the requested JSON shape (internally normalized server-side)
+      const payload = {
+        title: 'Driver Application Form',
+        trips: [{
+          date_of_trip: date,
+          aprox_dep: depart,
+          mountain_destination: mountain,
+          'Pitch In For Gas': { amount, method, notes },
+          number_of_seats: seats,
+          phone_number: phone
+        }]
+      };
+      try{ const res=await fetch('add.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload.trips[0]) }); const data=await res.json(); if(data.success){ trips=data.rides; renderCalendar(); closeAddModal(); toast('Ride saved!'); } else { toast(data.error||'Unable to save.'); } } catch(e){ console.error(e); toast('Network error.'); }
     }
 
-    function normalizeTrip(x){
-      function normTime(v){ if(!v) return ''; if(/^\d{2}:\d{2}$/.test(v)) return v; const m=v.match(/^(\d{1,2}):(\d{2})\s*([AP]M)$/i); if(m){ let h=Number(m[1])%12; if(/[pP]M/.test(m[3])) h+=12; return String(h).padStart(2,'0')+':'+m[2]; } return v; }
-      const date=x.date_of_trip||x.date||''; const depart=normTime(x.aprox_dep||x.depart||''); const mountain=x.mountain_destination||x.mountain||'';
-      const pay=x.payment||{}; const amount=Number(pay.amount??0); const method=String(pay.method??'Cash'); const notes=String(pay.notes??'');
-      const seats=Number(x.number_of_seats??x.seats??0); const phone=String(x.phone_number??x.phone??'');
-      if(!date||!depart||!mountain||!seats||!phone) return null;
-      return { id:'t_'+Math.random().toString(36).slice(2,10), date, depart, mountain, amount, method, notes, seats, seatsLeft:seats, phone };
-    }
-
-    // ===== Details / Join / Remove =====
-    let pendingRemoveId=null;
+    // ===== Details / Join =====
     function openDetail(id){ const t=trips.find(r=>r.id===id); if(!t) return; $$('#detailTitle').textContent=t.mountain+' – '+t.date;
-      const body=$$('#detailBody'); body.innerHTML=''; body.appendChild(kv('Departure',t.depart)); body.appendChild(kv('Price',fmtMoney(t.amount)));
-      body.appendChild(kv('Payment method',t.method)); if(t.notes) body.appendChild(kv('Notes',t.notes)); body.appendChild(kv('Seats left', t.seatsLeft+' / '+t.seats));
+      const body=$$('#detailBody'); body.innerHTML='';
+      body.appendChild(kv('Departure', t.depart));
+      body.appendChild(kv('Pitch In For Gas', fmtMoney(t.amount)));
+      body.appendChild(kv('Payment method', t.method));
+      if(t.notes) body.appendChild(kv('Notes', t.notes));
+      body.appendChild(kv('Seats left', `${t.seatsLeft} / ${t.seats}`));
       const ft=$$('#detailFooter'); ft.innerHTML='';
-      const joinBtn=document.createElement('button'); joinBtn.className='btn'; joinBtn.textContent='Join ride'; joinBtn.disabled=t.seatsLeft<=0; joinBtn.addEventListener('click',()=> joinRide(t.id));
-      const removeBtn=document.createElement('button'); removeBtn.className='btn'; removeBtn.style.background='var(--danger)'; removeBtn.textContent='Remove ride'; removeBtn.addEventListener('click',()=>{ pendingRemoveId=t.id; openRemove(); });
-      ft.appendChild(joinBtn); ft.appendChild(removeBtn);
+      const joinBtn=document.createElement('button'); joinBtn.className='btn'; joinBtn.textContent='Join ride'; joinBtn.disabled=t.seatsLeft<=0; joinBtn.addEventListener('click',()=> joinRide(t.id)); ft.appendChild(joinBtn);
       $$('#detailModal').showModal(); }
     function closeDetail(){ $$('#detailModal').close(); }
-    function openRemove(){ $$('#removeModal').showModal(); }
-    function closeRemove(){ $$('#removeModal').close(); pendingRemoveId=null; $$('#removeForm').reset(); }
-
     function kv(label,val){ const el=document.createElement('div'); el.className='kv'; el.innerHTML=`<strong>${escapeHtml(label)}</strong><span>${escapeHtml(String(val))}</span>`; return el; }
 
-    async function joinRide(id){ try{ const res=await fetch('join.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id }) }); const data=await res.json(); if(data.success){ await loadTrips(); closeDetail(); toast('You joined this ride!'); } else { toast(data.error||'Unable to join'); } } catch(e){ console.error(e); toast('Network error joining.'); } }
+    async function joinRide(id){ try{ const res=await fetch('join.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) }); const data=await res.json(); if(data.success){ trips=data.rides; renderCalendar(); closeDetail(); // show join modal with phone + template
+          const r = data.ride;
+          const jb = $$('#joinBody');
+          jb.innerHTML = '';
+          const p1 = document.createElement('p'); p1.innerHTML = `Driver phone: <strong>${escapeHtml(r.phone)}</strong>`; jb.appendChild(p1);
+          const p2 = document.createElement('p'); p2.textContent = `Message you can send: "Hi! I just joined your ride to ${r.mountain}, on ${r.date}!"`; jb.appendChild(p2);
+          $$('#joinModal').showModal();
+        } else { toast(data.error||'Unable to join.'); } } catch(e){ console.error(e); toast('Network error joining.'); } }
+    function closeJoin(){ $$('#joinModal').close(); }
 
-    async function confirmRemove(){ if(!pendingRemoveId){ closeRemove(); return; } const inputPhone=($$('#rmPhone').value||'').trim(); if(!inputPhone){ toast('Enter your phone number.'); return; }
-      try{ const res=await fetch('delete.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ id: pendingRemoveId, phone_number: inputPhone }) }); const data=await res.json(); if(data.success){ await loadTrips(); closeRemove(); closeDetail(); toast('Ride removed.'); } else { toast(data.error||'Unable to remove'); } } catch(e){ console.error(e); toast('Network error removing.'); } }
+    // ===== Manage (delete / update seats) =====
+    function openManage(id){ manageTargetId=id; $$('#manageModal').showModal(); }
+    function closeManage(){ manageTargetId=null; $$('#manageModal').close(); $$('#manageForm').reset(); }
 
-    // ===== Backend IO (PHP JSON) =====
-    async function loadTrips(){ try{ const res=await fetch('load.php?_=' + Date.now()); if(!res.ok) throw new Error('Failed to load'); trips=await res.json(); } catch(err){ console.error('Load error',err); trips=[]; } renderCalendar(); }
-    async function saveTrip(newTrip){ const res=await fetch('add.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(newTrip) }); const data=await res.json(); if(data.success){ trips=data.rides; renderCalendar(); toast('Ride saved!'); } else { throw new Error(data.error||'Save failed'); } }
+    $$('#btnDelete').addEventListener('click', async ()=>{
+      const phone = ($$('#mPhone').value||'').trim(); if(!phone){ toast('Enter your phone number'); return; }
+      try{ const res=await fetch('delete.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: manageTargetId, phone_number: phone }) }); const data=await res.json(); if(data.success){ trips=data.rides; renderCalendar(); closeManage(); toast('Ride removed.'); } else { toast(data.error||'Unable to remove'); } } catch(e){ console.error(e); toast('Network error'); }
+    });
 
-    // ===== Helpers =====
-    function escapeHtml(str){ return String(str).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+    $$('#btnUpdateSeats').addEventListener('click', async ()=>{
+      const phone = ($$('#mPhone').value||'').trim(); const newSeatsLeftRaw = $$('#mSeatsLeft').value; if(!phone){ toast('Enter your phone number'); return; }
+      if(newSeatsLeftRaw===''||newSeatsLeftRaw===null){ toast('Enter new seats left'); return; }
+      const newSeatsLeft = Math.max(0, Number(newSeatsLeftRaw)|0);
+      try{ const res=await fetch('update.php',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id: manageTargetId, phone_number: phone, new_seats_left: newSeatsLeft }) }); const data=await res.json(); if(data.success){ trips=data.rides; renderCalendar(); closeManage(); toast('Seats updated.'); } else { toast(data.error||'Unable to update'); } } catch(e){ console.error(e); toast('Network error'); }
+    });
 
-    // Initial
-    document.addEventListener('DOMContentLoaded', ()=>{ $$('#addBtn').addEventListener('click',()=>openAddModal()); loadTrips(); });
+    // ===== Backend IO =====
+    async function loadTrips(){ try{ const res=await fetch('load.php?_='+Date.now()); if(!res.ok) throw new Error('Failed'); trips = await res.json(); } catch(e){ console.error(e); trips=[]; } renderCalendar(); }
   </script>
 </body>
 </html>
-
-
 
 
