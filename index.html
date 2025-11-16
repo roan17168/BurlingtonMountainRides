@@ -379,7 +379,7 @@
       <form id="manageForm">
         <div class="full">
           <label for="mPhone">Creator's Phone Number</label>
-          <input id="mPhone" type="tel" inputmode="tel" placeholder="000-000-0000" required>
+          <input id="mPhone" type="tel" inputmode="tel" placeholder="000-000-0000" oninput="formatPhone(this)" maxlength="12" required>
         </div>
         <div>
           <label for="mSeatsLeft">New seats left</label>
