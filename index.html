@@ -334,7 +334,7 @@
         <div class="full">
           <label for="phone">Phone number</label>
           <input id="phone" name="phone" type="tel" inputmode="tel"
-                 placeholder="000-000-0000" required />
+                 placeholder="000-000-0000" oninput="formatPhone(this)" maxlength="12" required />
         </div>
       </form>
     </div>
@@ -396,6 +396,24 @@
   <div class="toast" id="toast"></div>
 
   <script>
+    function formatPhone(input) {
+      let numbers = input.value.replace(/\D/g, "");   // digits only
+      let parts = [];
+    
+      if (numbers.length > 3) {
+          parts.push(numbers.substring(0, 3));
+          if (numbers.length > 6) {
+              parts.push(numbers.substring(3, 6));
+              parts.push(numbers.substring(6, 10));
+          }else {
+              parts.push(numbers.substring(3));
+          }
+      } else {
+          parts.push(numbers);
+    }
+    
+    input.value = parts.join("-");
+    }
     // ===== Utilities & State =====
     const $$ = (sel, root=document) => root.querySelector(sel);
     let trips = [];          // list of rides from the server
